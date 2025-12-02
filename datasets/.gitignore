@@ -1,4 +1,9 @@
-inputs/TCGA.BRCA.sampleMap%2FHiSeqV2_PANCAN.gz
-inputs/TCGA.BRCA.sampleMap%2FBRCA_clinicalMatrix
+# File: datasets/.gitignore
 
+# Large input files
+inputs/expr_LumA_IDC_Tumor_vs_AllNormals.tsv
+inputs/metadata_LumA_IDC_Tumor_vs_AllNormals.tsv
+
+# General large input/output data folders
+inputs/
 outputs/
