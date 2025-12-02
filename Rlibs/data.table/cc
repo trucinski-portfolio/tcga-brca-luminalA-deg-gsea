@@ -1,0 +1,2 @@
+CC=x86_64-conda-linux-gnu-cc
+CFLAGS=-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/biou20/miniconda3/include -fdebug-prefix-map=/home/builder/r-4.2.0/miniconda/envs/r-4.2.0/conda-bld/r-base_1653520836469/work=/usr/local/src/conda/r-base-4.2.0 -fdebug-prefix-map=/home/biou20/miniconda3=/usr/local/src/conda-prefix
