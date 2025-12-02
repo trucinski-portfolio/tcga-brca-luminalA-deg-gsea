@@ -1,9 +1,8 @@
 # File: datasets/.gitignore
 
-# Large input files
-inputs/expr_LumA_IDC_Tumor_vs_AllNormals.tsv
-inputs/metadata_LumA_IDC_Tumor_vs_AllNormals.tsv
-
-# General large input/output data folders
+# Ignore all files in the inputs/ folder
 inputs/
+# Ignore all files in the outputs/ folder
 outputs/
+# If there are files directly in 'datasets/', ignore them here too
+*.tsv
