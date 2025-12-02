@@ -1,8 +1,8 @@
 # File: datasets/.gitignore
 
 # Ignore all files in the inputs/ folder
-inputs/
+preprocessing_inputs
 # Ignore all files in the outputs/ folder
-outputs/
+preprocessing_outputs
 # If there are files directly in 'datasets/', ignore them here too
 *.tsv
