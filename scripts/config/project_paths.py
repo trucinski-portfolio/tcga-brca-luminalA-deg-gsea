@@ -46,6 +46,13 @@ PREPROC_OUTPUT_DIR = PROCESSED / "preprocessing_outputs"
 
 ALL_DIRS = [RAW_INPUTS, PROCESSED, FIGURES, TABLES, DOCS, ENV]
 
+# DEG / GSEA outputs
+DEG_DIR = TABLES / "deg"
+GSEA_DIR = TABLES / "gsea"
+PLOTS_DIR = FIGURES / "deg_gsea"
+
+ALL_DIRS += [DEG_DIR, GSEA_DIR, PLOTS_DIR]
+
 def ensure_dirs():
     for d in ALL_DIRS:
         d.mkdir(parents=True, exist_ok=True)
