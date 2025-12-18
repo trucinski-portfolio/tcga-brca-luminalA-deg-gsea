@@ -87,5 +87,5 @@ Raw TCGA matrices and GSEA output artifacts are not tracked in Git (size). See d
 ## Author
 
 Thomas Rucinski
-M.S. Biomedical Engineering — University of Nevada, Reno  
+M.S. Candidate | Biomedical Engineering | University of Nevada, Las Vegas 
 Email: thomasrucinski13@gmail.com
