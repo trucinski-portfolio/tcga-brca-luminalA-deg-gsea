@@ -74,7 +74,7 @@ env/
 renv/                             # renv-managed R library
 renv.lock                         # locked R dependencies
 README.md
-
+```
 ---
 
 ## Quickstart
