@@ -1,7 +1,7 @@
 
 # raw data
 /data/raw/
-/data/processed/preprocessing_outputs
+/data/processed/preprocessing_outputs/*
 #jupyter notebook checkpoints
 .ipynb_checkpoints/
 
