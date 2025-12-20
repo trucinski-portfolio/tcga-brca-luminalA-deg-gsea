@@ -2,8 +2,9 @@
 # raw data
 /data/raw/
 
-# local R library (do not track)
-Rlibs/
-
 #jupyter notebook checkpoints
 .ipynb_checkpoints/
+
+#pycache intermediates
+__pycache__/
+*.pyc

@@ -1,107 +1,222 @@
-## Luminal A Invasive Ductal Carcinoma (TCGA-BRCA): Differential Expression and Pathway Enrichment Pipeline
+# Luminal A IDC (TCGA-BRCA) — Differential Expression + GSEA Pipeline
 
-This repository contains a reproducible analysis pipeline, emphasizing barcode harmonization, strict cohort definition, reproducible directory structure, and statistically principled ranking for GSEA. The pipeline focuses on differential gene expression and pathway enrichment (GSEA Preranked) comparing Luminal A invasive ductal carcinoma (IDC) primary tumors vs normal breast tissue using TCGA-BRCA RNA-seq and clinical phenotype data.
+This repository implements a **reproducible analysis pipeline** comparing  
+**Luminal A invasive ductal carcinoma (IDC) primary tumors vs normal breast tissue**  
+using TCGA-BRCA RNA-seq expression and phenotype metadata from **UCSC Xena**.
 
-The workflow is structured as three main stages:
-**1. Preprocessing (Python)**: load TCGA expression + phenotype tables, harmonize TCGA barcodes, filter to the study contrast, and write a clean metadata table + matched expression matrix.  
-**2. Differential expression (R / limma-trend)**: run limma, export full DEG results, and generate a t-statistics–based preranked list for GSEA.  
-**3. Visualization (R)**: volcano plot, heatmap of top DEGs, and combined GSEA “waterfall” plots across multiple gene set libraries.
+The pipeline emphasizes:
 
-**Manual step**: GSEA Preranked is run externally (UCSD/Broad Institute’s `GSEA_4.4.0` software). The pipeline expects the resulting `gsea_report_for_na_pos*.tsv` and `gsea_report_for_na_neg*.tsv` files to be placed into `data/GSEA_output/<GENESET_LIBRARY>/` before running the visualization notebook.
-
----
-
-## Repository structure
-
-- `scripts/`
-  - `01_preprocessing.ipynb` – preprocessing + cohort construction
-  - `02_differential_expression.ipynb` – limma DE + t-stat ranked list
-  - `03_visualization.ipynb` – DEG annotation + plots + GSEA summaries
-  - `config/` – centralized path definitions and directory setup helpers
-  - `setup/` – helper scripts documenting external data requirements
-- `data/` – raw inputs + external tool outputs (**see `data/README.md`**)
-- `results/`
-  - `tables/` – DEG results and combined GSEA summary tables
-  - `figures/` – volcano plots, DEG heatmaps, and GSEA waterfall plots
-- `env/` – environment documentation and dependency snapshots
-- `docs/` – optional project documents (including a 6-page report; figures and methods in that report reflect an earlier iteration of the pipeline)
+- **Deterministic paths**
+- **Automated input acquisition + validation**
+- **Reproducible Python and R environments**
+- **Transparent handoff to external GSEA Preranked**
+- **Regenerable figures and summary tables**
 
 ---
 
-## Quickstart
+## What this pipeline does
 
-### 0) Clone and move to repo root
-Run everything from the repository root (the folder containing `README.md`, `scripts/`, and `data/`).
+**Stage 0 — Setup & validation**
+- Creates the expected directory layout
+- Downloads TCGA inputs from UCSC Xena
+- Validates required files exist before notebook execution
+- Bootstraps R libraries via `renv` 
 
-The pipeline relies on:
-- `scripts/config/` for centralized path definitions and directory setup
-- `scripts/setup/` for helper scripts documenting external data requirements
+**Stage 1 — Preprocessing (Python)**
+- Reads Xena expression + phenotype tables
+- Harmonizes TCGA barcodes
+- Constructs the exact cohort contrast
+- Writes matched `expr` matrix + `metadata`
 
-No manual configuration is required beyond placing the expected data files in the correct locations.
+**Stage 2 — Differential expression + ranking (R / limma)**
+- Runs limma DE
+- Exports full DEG results
+- Produces a preranked list for GSEA
 
----
-
-### 1) Preprocessing (Python)
-Run `scripts/01_preprocessing.ipynb` to produce:
-
-- `data/processed/preprocessing_outputs/metadata_LumA_IDC_Tumor_vs_AllNormals.tsv`
-- `data/processed/preprocessing_outputs/expr_LumA_IDC_Tumor_vs_AllNormals.tsv`
-
----
-
-### 2) Differential expression (R / limma)
-Run `scripts/02_differential_expression.ipynb` to produce:
-
-- DEG tables in `results/tables/deg/`
-- GSEA preranked input file (t-stat based) in  
-  `data/processed/GSEA_input/LumA_IDC_Tumor_vs_AllNormals.rnk`
+**Stage 3 — Visualization + GSEA aggregation (R)**
+- Volcano plot and heatmap of top DEGs
+- Reads the *two* GSEA report TSVs (pos/neg) per library
+- Builds a combined enrichment summary + plots
 
 ---
 
-### 3) Run GSEA Preranked (manual, external tool)
-Run UCSD & Broad Institute’s `GSEA_4.4.0` software using **GSEA Preranked** with the `.rnk` file above.
+## Repo structure
+`scripts/`
+`├── setup/`
+`│   ├── setup_python.sh`          # creates .venv, installs Python deps, registers kernel
+`│   ├── download_xena_inputs.sh`  # downloads TCGA inputs from UCSC Xena
+`│   ├── prepare_xena_inputs.sh`   # validates required input files
+`│   ├── setup_r.R`                # installs R dependencies (renv-aware)
+`│   └── r_bootstrap.R`            # notebook-safe R bootstrap helper
+`│`
+`├── config/`                      # centralized path conventions (Python)
+`│`
+`notebooks/`
+`├── 01_preprocessing.ipynb`
+`├── 02_deg_analysis_gsea_ranking.ipynb`
+`└── 03_deg_gsea_visualization.ipynb`
+`│`
+`data/`
+`├── raw/preprocessing_inputs/`    # downloaded Xena inputs (not tracked)
+`├── processed/preprocessing_outputs/`
+`└── GSEA_output/`                 # GSEA pos/neg TSVs (per gene set library)
+`│`
+`results/`
+`├── tables/`                      # DEG + GSEA summary tables
+`└── figures/`                     # volcano, heatmap, GSEA plots
+`│`
+`env/`
+`├── requirements_python.txt`      # Python dependencies
+`│`
+`renv/`                            # renv-managed R library
+`renv.lock`                        # locked R dependencies
+`README.md`
 
-For each gene set library (Hallmark, KEGG Legacy, KEGG Medicus), copy the following outputs into:
+---
 
+## Quickstart 
+
+### 0) Clone and enter the repo
+```bash
+git clone https://github.com/yourname/tcga-brca-luminalA-deg-gsea.git
+cd tcga-brca-luminalA-deg-gsea
+
+This repo uses:
+- **Python** via a local virtual environment at `./.venv` (not committed)
+- **R** via `renv` with a committed lockfile (`renv.lock`)
+
+### 1) Python Environment Setup
+From the repo root:
+
+```bash
+bash scripts/setup/setup_python.sh
+
+This will:
+	•	Create .venv/
+	•	Install Python dependencies
+	•	Register a Jupyter kernel for the project
+
+### 2) R Environment Setup
+
+```bash
+R
+install.packages("renv")
+renv::restore()
+
+This restores the exact R environment defined in renv.lock.
+
+### 3) Download TCGA Xena Inputs
+
+```bash
+bash scripts/setup/download_xena_inputs.sh
+bash scripts/setup/prepare_xena_inputs.sh
+
+### 4) Run the analysis pipeline
+
+Execute notebooks in order:
+	1.	scripts/notebooks/01_preprocessing.ipynb (Python)
+	2.	scripts/notebooks/02_differential_expression.ipynb (R)
+	3.	scripts/notebooks/03_visualization.ipynb (R)
+
+  ---
+
+## Outputs and directory layout
+
+After running the full pipeline, the following key outputs are produced:
+
+### Preprocessing outputs (Script 01)
+`data/processed/preprocessing_outputs/`
+`├── expr_LumA_IDC_Tumor_vs_AllNormals.tsv`
+`└── metadata_LumA_IDC_Tumor_vs_AllNormals.tsv`
+
+These files define the **final cohort and expression matrix** used in all downstream analyses.
+
+---
+
+### Differential expression results (Script 02)
+`results/tables/deg/`
+`├── DEG_Results_LumA_IDC_Tumor_vs_AllNormals_limma.csv`
+`└── DEG_Results_LumA_IDC_Tumor_vs_AllNormals_limma_annotated.csv`
+
+`results/figures/deg/`
+`├── Top50_DEGs_Heatmap.pdf`
+`├── Top50_DEGs_Heatmap.png`
+`└── Volcano_LumA_IDC_Tumor_vs_AllNormals.png`
+
+Differential expression is performed using **limma-trend**, and the ranked list for GSEA is derived from **limma t-statistics**.
+
+---
+
+### Pathway enrichment summaries and figures (Script 03)
+`results/tables/gsea/`
+`└── GSEA_ALL_summary_LumA_IDC_Tumor_vs_AllNormals.csv`
+
+This table merges positive and negative enrichment results across all gene set libraries and reports:
+	•	Normalized Enrichment Score (NES)
+	•	Enrichment direction (Up_in_Tumor / Down_in_Tumor)
+	•	Gene set database source
+
+Results are sorted by absolute enrichment strength.
+
+`results/figures/gsea/`
+`├── GSEA_Waterfall_Hallmark.png`
+`├── GSEA_Waterfall_KEGG_Legacy.png`
+`└── GSEA_Waterfall_KEGG_Medicus.png`
+
+Each waterfall plot visualizes the top enriched pathways per library, ranked by NES, and colored by direction of enrichment in tumor tissue.
+
+These outputs summarize differential gene expression and pathway enrichment across multiple gene set libraries
+(Hallmark, KEGG Legacy, KEGG Medicus) and provide a comparative view of proliferation, DNA repair, proteostasis, and signaling programs active in Luminal A IDC.
+
+---
+
+## GSEA Preranked (external step)
+
+GSEA Preranked is run **outside** this repository using the Broad Institute’s
+`GSEA_4.x` software.
+
+Required inputs:
+- Ranked list produced by Script 02 (`.rnk` file)
+
+Expected outputs (per gene set library):
+- `gsea_report_for_na_pos_*.tsv`
+- `gsea_report_for_na_neg_*.tsv`
+
+These files must be placed in:
 - `data/GSEA_output/Hallmark-All/`
 - `data/GSEA_output/KEGG-Legacy/`
 - `data/GSEA_output/KEGG-Medicus/`
 
-Required files per library:
-- `gsea_report_for_na_pos_*.tsv`
-- `gsea_report_for_na_neg_*.tsv`
-
-(Details and expectations are documented in `data/README.md`.)
+Script 03 automatically detects **the most recent positive and negative report per
+library based on file modification time** and merges them into a single enrichment
+summary.
 
 ---
 
-### 4) Visualization + summary tables (R)
-Run `scripts/03_visualization.ipynb` to generate:
+## Reproducibility notes
 
-- `results/tables/gsea/GSEA_ALL_summary_*.csv`
-- `results/figures/gsea/GSEA_Waterfall_*.png`
-- DEG volcano plots and heatmaps in `results/figures/deg/`
+- Python dependencies are defined in `env/requirements_python.txt` and installed
+  into a local `.venv`
+- R dependencies are fully locked and restorable via `renv.lock`
+- The `.venv/` directory is intentionally **not committed**
+- Large raw TCGA matrices are not tracked in Git
 
----
-
-## Notes on interpretation
-
-- Differential expression is estimated via **limma-trend**.
-- The GSEA ranked list is derived from **limma t-statistics**, preserving both effect size and directionality.
-  - Positive enrichment (POS) corresponds to pathways enriched toward the top of the ranked list.
-  - Negative enrichment (NEG) corresponds to pathways enriched toward the bottom of the ranked list.
+This design allows the analysis to be **fully reproducible** while keeping the
+repository lightweight.
 
 ---
 
-## Data and licensing
+### Directory summary
 
-Raw TCGA matrices and GSEA output artifacts are not tracked in Git due to size constraints.  
-See `data/README.md` for exact expectations and directory layout.
+- `scripts/`   — analysis notebooks, setup scripts, and path/config helpers  
+- `data/`      — raw inputs, processed data, and external GSEA outputs  
+- `results/`   — tables and figures generated by the pipeline  
+- `env/`       — environment specifications (Python and R)  
+- `docs/`      — reports, slides, and supplementary materials  
 
 ---
 
-## Author
+## Authorship
 
-Thomas Rucinski  
-M.S. Candidate | Biomedical Engineering | University of Nevada, Las Vegas  
-Email: thomasrucinski13@gmail.com
+**Thomas Rucinski**
+Biomedical Engineering Masters Student at University of Nevada Las Vegas

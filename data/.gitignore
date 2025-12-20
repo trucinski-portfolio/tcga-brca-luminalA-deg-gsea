@@ -4,5 +4,4 @@
 preprocessing_inputs/*
 # Ignore all files in the outputs/ folder
 preprocessing_outputs/*
-# If there are files directly in 'datasets/', ignore them here too
-*.tsv
+

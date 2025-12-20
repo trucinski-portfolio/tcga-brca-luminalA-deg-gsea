@@ -8,7 +8,7 @@ import os
 
 def get_repo_root():
     # 1) explicit override (HPC-friendly)
-    env_root = os.getenv("BIOL616_REPO_ROOT")
+    env_root = os.getenv("REPO_ROOT")
     if env_root:
         root = Path(env_root).resolve()
     else:
@@ -21,7 +21,7 @@ def get_repo_root():
     if missing:
         raise RuntimeError(
             f"Not repo root: {root}\nMissing: {missing}\n"
-            "Fix by setting BIOL616_REPO_ROOT to the repo root."
+            "Fix by setting REPO_ROOT to the repo root."
         )
     return root
 

@@ -1,4 +1,4 @@
-"NAME","GS.br..follow.link.to.MSigDB","GS.DETAILS","SIZE","ES","NES","NOM.p.val","FDR.q.val","FWER.p.val","RANK.AT.MAX","LEADING.EDGE","X","direction","Database"
+"NAME","GS<br> follow link to MSigDB","GS DETAILS","SIZE","ES","NES","NOM p-val","FDR.q.val","FWER p-val","RANK AT MAX","LEADING EDGE","...12","direction","Database"
 "HALLMARK_E2F_TARGETS","HALLMARK_E2F_TARGETS","Details ...",187,0.66962284,3.1925952,0,0,0,2942,"tags=55%, list=14%, signal=64%",NA,"Up_in_Tumor","Hallmark"
 "HALLMARK_G2M_CHECKPOINT","HALLMARK_G2M_CHECKPOINT","Details ...",183,0.6194375,2.9371717,0,0,0,2942,"tags=54%, list=14%, signal=62%",NA,"Up_in_Tumor","Hallmark"
 "HALLMARK_MYC_TARGETS_V1","HALLMARK_MYC_TARGETS_V1","Details ...",187,0.5575237,2.6560335,0,0,0,4860,"tags=59%, list=24%, signal=77%",NA,"Up_in_Tumor","Hallmark"
