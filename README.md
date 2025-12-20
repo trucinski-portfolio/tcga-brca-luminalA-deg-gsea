@@ -162,7 +162,8 @@ Differential expression is performed using **limma-trend**, and the ranked list 
 ---
 
 ### Pathway enrichment summaries and figures (Script 03)
-text```results/
+```text
+results/
 └── tables
 	└── gsea
         ├── GSEA_ALL_summary_LumA_IDC_Tumor_vs_AllNormals.csv
@@ -174,19 +175,19 @@ This table merges positive and negative enrichment results across all gene set l
 	•	Gene set database source
 
 Results are sorted by absolute enrichment strength.
-
+```text
 results/
 └── figures
 	└── gsea
 		├── GSEA_Waterfall_Hallmark.png
         ├── GSEA_Waterfall_KEGG_Legacy.png
         └── GSEA_Waterfall_KEGG_Medicus.png
-
+```
 Each waterfall plot visualizes the top enriched pathways per library, ranked by NES, and colored by direction of enrichment in tumor tissue.
 
 These outputs summarize differential gene expression and pathway enrichment across multiple gene set libraries
 (Hallmark, KEGG Legacy, KEGG Medicus) and provide a comparative view of proliferation, DNA repair, proteostasis, and signaling programs active in Luminal A IDC.
-```
+
 ---
 
 ## GSEA Preranked (external step)
