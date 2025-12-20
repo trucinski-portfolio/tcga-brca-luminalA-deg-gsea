@@ -156,14 +156,13 @@ results/
     └── gsea
         ├── GSEA_ALL_summary_LumA_IDC_Tumor_vs_AllNormals.csv
         └── LumA_IDC_Tumor_vs_AllNormals.rnk
-
-Differential expression is performed using **limma-trend**, and the ranked list for GSEA is derived from **limma t-statistics**.
 ```
+Differential expression is performed using **limma-trend**, and the ranked list for GSEA is derived from **limma t-statistics**.
+
 ---
 
 ### Pathway enrichment summaries and figures (Script 03)
-text```
-results/
+text```results/
 └── tables
 	└── gsea
         ├── GSEA_ALL_summary_LumA_IDC_Tumor_vs_AllNormals.csv
