@@ -1,0 +1,29 @@
+project:
+  type: default
+  output-dir: docs/reports
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    toc-title: "Contents"
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    self-contained: true
+    embed-resources: true
+    highlight-style: github
+    fig-width: 10
+    fig-height: 7
+    fig-dpi: 150
+
+execute:
+  echo: true
+  warning: false
+  message: false
+
+knitr:
+  opts_chunk:
+    fig.path: "figures/"
+    cache: false
