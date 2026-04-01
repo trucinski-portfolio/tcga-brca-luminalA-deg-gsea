@@ -68,7 +68,7 @@ project-root/
 
 | Source | Object | Key field |
 |--------|--------|-----------|
-| TCGA-BRCA RNA-seq (Xena TOIL TPM) | expression matrix | TCGA barcode (col) |
+| TCGA-BRCA RNA-seq (Xena `HiSeqV2.gz`, BRCA-specific TOIL TPM — **not** `HiSeqV2_PANCAN.gz`; pan-cancer normalization compresses within-BRCA variance and is wrong for PAM50 subtype contrasts) | expression matrix | TCGA barcode (col) |
 | TCGA-BRCA clinical matrix (Xena) | phenotype data | `sampleID` |
 | PAM50 assignments | Xena `PAM50Call_RNAseq` field | `sampleID` |
 

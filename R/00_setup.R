@@ -4,8 +4,9 @@
 # Contrasts active: none (setup stage only)
 #
 # Inputs:  none (downloads raw data if absent)
-# Outputs: data/raw/preprocessing_inputs/HiSeqV2_PANCAN.gz
+# Outputs: data/raw/preprocessing_inputs/HiSeqV2.gz
 #          data/raw/preprocessing_inputs/BRCA_clinicalMatrix.tsv
+#          data/raw/preprocessing_inputs/PANCAN_survival.tsv
 #          all project directories created
 
 library(here)
@@ -149,14 +150,23 @@ download_with_retry <- function(url, dest, retries = 3L, pause_sec = 2) {
   )
 }
 
-#' Download TCGA-BRCA expression and clinical matrices from UCSC Xena
+#' Download TCGA-BRCA expression, phenotype, and survival files from UCSC Xena
 #'
-#' Downloads the TOIL RSEM TPM expression matrix (HiSeqV2_PANCAN) and the
-#' BRCA clinical matrix from the UCSC Xena data hub. Both files are required
-#' by Stage 01 preprocessing. Downloads are skipped when files already exist.
+#' Downloads three files required by the v3.0 pipeline:
+#' \enumerate{
+#'   \item \strong{HiSeqV2.gz} — TOIL RSEM TPM expression matrix, BRCA-cohort
+#'         normalized, log2(TPM+0.001). Use this (not HiSeqV2_PANCAN) for
+#'         within-BRCA PAM50 subtype analysis: the PANCAN version applies
+#'         cross-cancer batch correction that compresses within-BRCA variance.
+#'   \item \strong{BRCA_clinicalMatrix.tsv} — BRCA phenotype file containing
+#'         \code{PAM50Call_RNAseq} and clinical covariates.
+#'   \item \strong{PANCAN_survival.tsv} — Pan-Cancer Atlas curated OS/PFI
+#'         survival endpoints (Supplemental Table S1, Liu et al. 2018).
+#' }
+#' Downloads are skipped when destination files already exist and are non-empty.
 #'
-#' @return Invisible named character vector with paths to \code{expr} and
-#'   \code{clinical} files.
+#' @return Invisible named character vector with paths to \code{expr},
+#'   \code{clinical}, and \code{survival} files.
 #'
 #' @examples
 #' paths <- download_xena_inputs()
@@ -165,11 +175,15 @@ download_xena_inputs <- function() {
 
   inputs <- list(
     expr = list(
+      # HiSeqV2 (BRCA-specific TOIL normalization) — NOT HiSeqV2_PANCAN.
+      # HiSeqV2_PANCAN applies cross-cancer batch correction that reduces
+      # within-BRCA variance; inappropriate for PAM50 subtype contrasts
+      # where all comparisons stay within the BRCA cohort.
       url  = paste0(
         "https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/",
-        "TCGA.BRCA.sampleMap%2FHiSeqV2_PANCAN.gz"
+        "TCGA.BRCA.sampleMap%2FHiSeqV2.gz"
       ),
-      dest = here::here("data", "raw", "preprocessing_inputs", "HiSeqV2_PANCAN.gz")
+      dest = here::here("data", "raw", "preprocessing_inputs", "HiSeqV2.gz")
     ),
     clinical = list(
       url  = paste0(
@@ -178,6 +192,15 @@ download_xena_inputs <- function() {
       ),
       dest = here::here(
         "data", "raw", "preprocessing_inputs", "BRCA_clinicalMatrix.tsv"
+      )
+    ),
+    survival = list(
+      url  = paste0(
+        "https://pancanatlas.xenahubs.net/download/",
+        "Survival_SupplementalTable_S1_20171025_xena_sp"
+      ),
+      dest = here::here(
+        "data", "raw", "preprocessing_inputs", "PANCAN_survival.tsv"
       )
     )
   )
@@ -209,8 +232,9 @@ validate_inputs <- function() {
   message("── Stage 00 | validating inputs ────────────────────────────────────────")
 
   required <- c(
-    here::here("data", "raw", "preprocessing_inputs", "HiSeqV2_PANCAN.gz"),
-    here::here("data", "raw", "preprocessing_inputs", "BRCA_clinicalMatrix.tsv")
+    here::here("data", "raw", "preprocessing_inputs", "HiSeqV2.gz"),
+    here::here("data", "raw", "preprocessing_inputs", "BRCA_clinicalMatrix.tsv"),
+    here::here("data", "raw", "preprocessing_inputs", "PANCAN_survival.tsv")
   )
 
   missing_files <- character(0)
