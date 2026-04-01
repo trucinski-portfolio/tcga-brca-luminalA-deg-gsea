@@ -1,11 +1,3 @@
-# Python
-.venv/
-__pycache__/
-*.pyc
-
-# Jupyter
-.ipynb_checkpoints/
-
 # R
 .Rhistory
 .RData
@@ -20,4 +12,9 @@ results/tables/
 
 # OS / editor
 .DS_Store
+.vscode/.venv/
+renv/library/
+scripts/.ipynb_checkpoints/
+scripts/config/__pycache__/
 .vscode/
+.venv/
