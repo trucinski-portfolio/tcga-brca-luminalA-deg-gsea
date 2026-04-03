@@ -7,9 +7,6 @@ data/raw/
 data/processed/
 results/tables/
 
-# Claude Code
-.claude/
-
 # OS / editor
 .DS_Store
 .vscode/.venv/
