@@ -5,7 +5,7 @@
 # Large / regenerable data
 data/raw/
 data/processed/
-results/tables/
+# results/tables/ intentionally tracked — DEG CSVs, signatures, fgsea, survival
 
 # OS / editor
 .DS_Store

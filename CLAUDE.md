@@ -470,7 +470,9 @@ No stubs. No TODO comments left in committed code.
 
 □ 03: 18 .csv files in results/tables/deg/. Sig gene counts printed per contrast.
 
-□ 04: Signature .csv per subtype. selection_frequency column present.
+☑ 04: Signature .csv per subtype. selection_frequency column present.
+      FREQ_CUTOFF = 0.80 for all subtypes.
+      LumA 30 genes, LumB 27, Her2 36, Basal 34 (Her2/Basal slightly broader due to small n).
 
 □ 05: fgsea .csv per subtype. ≥5 pathways at padj < 0.05 per subtype.
 
