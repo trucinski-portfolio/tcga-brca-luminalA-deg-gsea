@@ -474,7 +474,9 @@ No stubs. No TODO comments left in committed code.
       FREQ_CUTOFF = 0.80 for all subtypes.
       LumA 30 genes, LumB 27, Her2 36, Basal 34 (Her2/Basal slightly broader due to small n).
 
-□ 05: fgsea .csv per subtype. ≥5 pathways at padj < 0.05 per subtype.
+☑ 05: fgsea .csv per subtype. ≥5 pathways at padj < 0.05 per subtype.
+      Both vs_GTEx and vs_NAT contrasts per subtype. 58–93 sig pathways per contrast.
+      236 gene sets: 50 Hallmark + 186 KEGG Legacy.
 
 □ 06: wgcna_modules.rds. Module-trait heatmap printed to screen AND saved
       as .png + .pdf in results/figures/.
