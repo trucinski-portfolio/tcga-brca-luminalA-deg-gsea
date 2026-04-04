@@ -14,4 +14,8 @@ renv/library/
 scripts/.ipynb_checkpoints/
 scripts/config/__pycache__/
 .vscode/
+# AI/Tooling
+.claude/
 .venv/
+env/
+

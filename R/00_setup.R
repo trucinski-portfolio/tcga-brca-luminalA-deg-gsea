@@ -1,272 +1,195 @@
 # R/00_setup.R
-# Stage 00: renv validation, directory scaffold, Xena data download + input validation
+# Stage 00: renv verification, phenotype download, column inspection,
+#           3-way sample filter, and metadata cache.
 #
-# Contrasts active: none (setup stage only)
-#
-# Inputs:  none (downloads raw data if absent)
-# Outputs: data/raw/preprocessing_inputs/HiSeqV2.gz
-#          data/raw/preprocessing_inputs/BRCA_clinicalMatrix.tsv
-#          data/raw/preprocessing_inputs/PANCAN_survival.tsv
-#          all project directories created
+# Inputs:  none
+# Outputs: data/processed/metadata_breast.rds  ($pheno data.frame, group-labeled)
 
 library(here)
+library(dplyr)
+library(UCSCXenaTools)
+
+TOIL_HUB      <- "toilHub"
+PHENO_DATASET <- "TcgaTargetGTEX_phenotype"
+EXPECTED_N    <- c(Tumor = 1100L, NAT = 113L, GTEx = 200L)
 
 # ---------------------------------------------------------------------------
-# renv bootstrap
+# renv
 # ---------------------------------------------------------------------------
 
-#' Bootstrap renv for reproducible package management
+#' Verify renv is installed and restore the project library from renv.lock
 #'
-#' Checks that renv is available and the project library is synchronized with
-#' renv.lock. Installs renv itself if absent, then calls renv::restore() when
-#' the library is out of sync.
+#' Calls \code{renv::restore()} which is a no-op when the library is already
+#' synchronized, and installs any missing packages otherwise.
 #'
-#' @return Invisible NULL. Called for side effects.
-#'
+#' @return Invisible NULL.
 #' @examples
-#' bootstrap_renv()
-bootstrap_renv <- function() {
-  message("── Stage 00 | renv bootstrap ──────────────────────────────────────────")
+#' verify_renv()
+verify_renv <- function() {
+  message("── Stage 00 | renv ──────────────────────────────────────────────────────")
+  if (!requireNamespace("renv", quietly = TRUE))
+    stop("renv not installed. Run: install.packages('renv')")
+  if (!file.exists(here::here("renv.lock")))
+    stop("renv.lock not found. Run renv::snapshot() from the repo root.")
 
-  if (!requireNamespace("renv", quietly = TRUE)) {
-    message("renv not found — installing from CRAN.")
-    install.packages("renv", repos = "https://cloud.r-project.org")
-  }
-
-  lockfile <- here::here("renv.lock")
-  if (!file.exists(lockfile)) {
-    stop(
-      "renv.lock not found at: ", lockfile, "\n",
-      "Run renv::snapshot() from the repo root to create it."
-    )
-  }
-
-  status <- renv::status(project = here::here())
-  if (!isTRUE(status$synchronized)) {
-    message("renv library out of sync — restoring from renv.lock ...")
-    renv::restore(project = here::here(), prompt = FALSE)
-  } else {
-    message("renv library is synchronized.")
-  }
-
-  message("R version : ", getRversion())
-  message("Library   : ", .libPaths()[1])
-  message("Lockfile  : ", normalizePath(lockfile))
-  message("── Stage 00 | renv bootstrap complete ─────────────────────────────────")
+  renv::restore(prompt = FALSE)
+  message("  R ", getRversion(), " | library: ", .libPaths()[1])
+  message("── Stage 00 | renv OK ───────────────────────────────────────────────────")
   invisible(NULL)
 }
 
 # ---------------------------------------------------------------------------
-# Directory scaffold
+# Phenotype download (includes hub connectivity check)
 # ---------------------------------------------------------------------------
 
-#' Create all required project directories
+#' Download TcgaTargetGTEX_phenotype from the TOIL hub
 #'
-#' Creates every directory in the v3.0 project layout if it does not already
-#' exist. Safe to re-run (idempotent).
+#' Follows the authoritative UCSCXenaTools pipeline from CLAUDE.md exactly:
+#' \code{XenaGenerate → XenaFilter → XenaQuery → XenaDownload → XenaPrepare}.
+#' Hub connectivity is verified implicitly — any network failure surfaces as a
+#' clear error via \code{tryCatch}.
 #'
-#' @return Invisible character vector of directory paths.
-#'
+#' @return data.frame of the full phenotype table.
 #' @examples
-#' create_project_dirs()
-create_project_dirs <- function() {
-  message("── Stage 00 | creating directories ────────────────────────────────────")
+#' pheno <- download_phenotype()
+download_phenotype <- function() {
+  message("── Stage 00 | phenotype download ───────────────────────────────────────")
 
-  dirs <- c(
-    here::here("data", "raw", "preprocessing_inputs"),
-    here::here("data", "processed"),
-    here::here("results", "figures", "qc"),
-    here::here("results", "figures", "clustering"),
-    here::here("results", "figures", "deg"),
-    here::here("results", "figures", "gsea"),
-    here::here("results", "figures", "wgcna"),
-    here::here("results", "figures", "survival"),
-    here::here("results", "tables", "deg"),
-    here::here("results", "tables", "fgsea"),
-    here::here("results", "tables", "signatures"),
-    here::here("results", "tables", "survival")
-  )
+  pheno <- tryCatch({
+    pheno_dl <- XenaGenerate(subset = XenaHostNames == TOIL_HUB) |>
+      XenaFilter(filterDatasets = PHENO_DATASET) |>
+      XenaQuery() |>
+      XenaDownload(destdir = here::here("data", "raw"))
+    XenaPrepare(pheno_dl)
+  }, error = function(e) {
+    stop("Failed to reach toilHub or download phenotype — check connectivity.\n",
+         "Detail: ", conditionMessage(e))
+  })
 
-  for (d in dirs) {
-    if (!dir.exists(d)) {
-      dir.create(d, recursive = TRUE)
-      message("  created: ", d)
-    }
-  }
-
-  message("── Stage 00 | directories ready ────────────────────────────────────────")
-  invisible(dirs)
+  message("  rows: ", nrow(pheno), " | cols: ", ncol(pheno))
+  message("── Stage 00 | phenotype downloaded ─────────────────────────────────────")
+  pheno
 }
 
 # ---------------------------------------------------------------------------
-# Xena download
+# Column inspection
 # ---------------------------------------------------------------------------
 
-#' Download a file from URL with retry logic
+#' Print phenotype column names and detect the GTEx primary-site field
 #'
-#' Attempts to download a file up to \code{retries} times, pausing
-#' \code{pause_sec} seconds between attempts. Skips download if the destination
-#' file already exists and is non-empty.
+#' R may import \code{_primary_site} (leading underscore) as \code{X_primary_site}.
+#' Prints all column names so the confirmed name can be recorded in CLAUDE.md,
+#' then returns whichever variant is present in this download.
 #'
-#' @param url Character. Source URL.
-#' @param dest Character. Destination file path.
-#' @param retries Integer. Number of download attempts. Default 3.
-#' @param pause_sec Numeric. Seconds to wait between retries. Default 2.
-#'
-#' @return Invisible character scalar of the destination path.
-#'
+#' @param pheno data.frame. Full phenotype table from \code{download_phenotype()}.
+#' @return Character scalar — the confirmed GTEx site column name.
 #' @examples
-#' download_with_retry(
-#'   url  = "https://example.com/file.gz",
-#'   dest = here::here("data", "raw", "preprocessing_inputs", "file.gz")
-#' )
-download_with_retry <- function(url, dest, retries = 3L, pause_sec = 2) {
-  if (file.exists(dest) && file.size(dest) > 0) {
-    message("  already present (skipping): ", basename(dest))
-    return(invisible(dest))
-  }
+#' site_col <- inspect_columns(pheno)
+inspect_columns <- function(pheno) {
+  message("── Stage 00 | column inspection ────────────────────────────────────────")
+  message("  colnames(pheno):\n  ", paste(colnames(pheno), collapse = "\n  "))
 
-  for (attempt in seq_len(retries)) {
-    message("  downloading (attempt ", attempt, "/", retries, "): ", basename(dest))
-    tryCatch(
-      {
-        utils::download.file(url, destfile = dest, mode = "wb", quiet = TRUE)
-        if (file.exists(dest) && file.size(dest) > 0) {
-          message("  download complete: ", basename(dest))
-          return(invisible(dest))
-        }
-        message("  download produced empty file — retrying ...")
-      },
-      error = function(e) {
-        message("  error on attempt ", attempt, ": ", conditionMessage(e))
-      }
-    )
-    if (attempt < retries) Sys.sleep(pause_sec)
-  }
+  candidates <- c("X_primary_site", "_primary_site")
+  site_col   <- intersect(candidates, colnames(pheno))[1]
 
-  stop(
-    "Failed to download after ", retries, " attempts: ", basename(dest), "\n",
-    "URL: ", url
-  )
+  if (is.na(site_col))
+    stop("Neither 'X_primary_site' nor '_primary_site' found in phenotype. ",
+         "Update CLAUDE.md with the correct GTEx site column name.")
+  if (sum(candidates %in% colnames(pheno)) > 1)
+    warning("Both column name variants present — using '", site_col, "'. Verify.")
+
+  message("  GTEx site column confirmed: '", site_col, "'")
+  message("  >> Record this in CLAUDE.md under 'Confirmed GTEx field name'")
+  message("── Stage 00 | column inspection complete ───────────────────────────────")
+  site_col
 }
 
-#' Download TCGA-BRCA expression, phenotype, and survival files from UCSC Xena
+# ---------------------------------------------------------------------------
+# 3-way filter + group labeling
+# ---------------------------------------------------------------------------
+
+#' Apply the 3-way OR filter and assign Tumor / NAT / GTEx group labels
 #'
-#' Downloads three files required by the v3.0 pipeline:
-#' \enumerate{
-#'   \item \strong{HiSeqV2.gz} — TOIL RSEM TPM expression matrix, BRCA-cohort
-#'         normalized, log2(TPM+0.001). Use this (not HiSeqV2_PANCAN) for
-#'         within-BRCA PAM50 subtype analysis: the PANCAN version applies
-#'         cross-cancer batch correction that compresses within-BRCA variance.
-#'   \item \strong{BRCA_clinicalMatrix.tsv} — BRCA phenotype file containing
-#'         \code{PAM50Call_RNAseq} and clinical covariates.
-#'   \item \strong{PANCAN_survival.tsv} — Pan-Cancer Atlas curated OS/PFI
-#'         survival endpoints (Supplemental Table S1, Liu et al. 2018).
+#' Implements the exact OR filter from CLAUDE.md using confirmed column names:
+#' \itemize{
+#'   \item TCGA arm — \code{`primary disease or tissue` == "breast invasive carcinoma"}
+#'         (captures Tumor barcode 01 and NAT barcode 11 in one pass)
+#'   \item GTEx arm — \code{`_study` == "GTEX" & `_primary_site` == "Breast"}
 #' }
-#' Downloads are skipped when destination files already exist and are non-empty.
+#' Groups are assigned by TCGA barcode positions 14–15 for TCGA samples and
+#' by study origin for GTEx. Unclassified rows are dropped with a warning.
 #'
-#' @return Invisible named character vector with paths to \code{expr},
-#'   \code{clinical}, and \code{survival} files.
-#'
+#' @param pheno    data.frame. Full phenotype table.
+#' @param site_col Character. Confirmed GTEx site column from \code{inspect_columns()}.
+#' @return data.frame with column \code{group} (\code{"Tumor"}, \code{"NAT"},
+#'   \code{"GTEx"}) — no "Other" rows.
 #' @examples
-#' paths <- download_xena_inputs()
-download_xena_inputs <- function() {
-  message("── Stage 00 | downloading Xena inputs ─────────────────────────────────")
+#' breast <- filter_breast(pheno, site_col)
+filter_breast <- function(pheno, site_col) {
+  message("── Stage 00 | 3-way breast filter ──────────────────────────────────────")
 
-  inputs <- list(
-    expr = list(
-      # HiSeqV2 (BRCA-specific TOIL normalization) — NOT HiSeqV2_PANCAN.
-      # HiSeqV2_PANCAN applies cross-cancer batch correction that reduces
-      # within-BRCA variance; inappropriate for PAM50 subtype contrasts
-      # where all comparisons stay within the BRCA cohort.
-      url  = paste0(
-        "https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/",
-        "TCGA.BRCA.sampleMap%2FHiSeqV2.gz"
-      ),
-      dest = here::here("data", "raw", "preprocessing_inputs", "HiSeqV2.gz")
-    ),
-    clinical = list(
-      url  = paste0(
-        "https://tcga-xena-hub.s3.us-east-1.amazonaws.com/download/",
-        "TCGA.BRCA.sampleMap%2FBRCA_clinicalMatrix"
-      ),
-      dest = here::here(
-        "data", "raw", "preprocessing_inputs", "BRCA_clinicalMatrix.tsv"
-      )
-    ),
-    survival = list(
-      url  = paste0(
-        "https://pancanatlas.xenahubs.net/download/",
-        "Survival_SupplementalTable_S1_20171025_xena_sp"
-      ),
-      dest = here::here(
-        "data", "raw", "preprocessing_inputs", "PANCAN_survival.tsv"
-      )
-    )
-  )
+  breast <- pheno |>
+    filter(
+      `primary disease or tissue` == "Breast Invasive Carcinoma" |
+      (`_study` == "GTEX" & `_primary_site` == "Breast")
+    ) |>
+    mutate(group = case_when(
+      substr(sample, 14, 15) == "01" ~ "Tumor",
+      substr(sample, 14, 15) == "11" ~ "NAT",
+      `_study` == "GTEX"             ~ "GTEx",
+      TRUE                           ~ "Other"
+    ))
 
-  paths <- vapply(inputs, function(x) {
-    download_with_retry(url = x$url, dest = x$dest)
-    x$dest
-  }, character(1))
+  n_other <- sum(breast$group == "Other")
+  if (n_other > 0) {
+    warning(n_other, " sample(s) could not be classified and will be dropped.")
+    breast <- filter(breast, group != "Other")
+  }
 
-  message("── Stage 00 | Xena inputs downloaded ──────────────────────────────────")
-  invisible(paths)
+  counts <- table(breast$group)
+  for (grp in names(EXPECTED_N)) {
+    n <- as.integer(counts[grp])
+    message(sprintf("  %-8s: %d", grp, if (is.na(n)) 0L else n))
+    if (is.na(n) || n < EXPECTED_N[[grp]] * 0.5)
+      warning("Group '", grp, "' n=", if (is.na(n)) 0L else n,
+              " is below 50% of expected (~", EXPECTED_N[[grp]], "). Verify data.")
+  }
+
+  message("── Stage 00 | filter complete ───────────────────────────────────────────")
+  breast
 }
 
 # ---------------------------------------------------------------------------
-# Input validation
+# Save
 # ---------------------------------------------------------------------------
 
-#' Validate that required raw input files are present and non-empty
+#' Save the labeled breast metadata to data/processed/metadata_breast.rds
 #'
-#' Checks each required input file and stops with a clear diagnostic message
-#' if any file is absent or empty. Called after \code{download_xena_inputs()}
-#' to provide a stage gate before Stage 01 can proceed.
+#' Writes the Stage 00 output consumed by \code{R/01_preprocessing.R}.
 #'
-#' @return Invisible NULL. Stops with an error if validation fails.
-#'
+#' @param breast data.frame. Labeled output of \code{filter_breast()}.
+#' @return Invisible character path.
 #' @examples
-#' validate_inputs()
-validate_inputs <- function() {
-  message("── Stage 00 | validating inputs ────────────────────────────────────────")
-
-  required <- c(
-    here::here("data", "raw", "preprocessing_inputs", "HiSeqV2.gz"),
-    here::here("data", "raw", "preprocessing_inputs", "BRCA_clinicalMatrix.tsv"),
-    here::here("data", "raw", "preprocessing_inputs", "PANCAN_survival.tsv")
-  )
-
-  missing_files <- character(0)
-  for (f in required) {
-    if (!file.exists(f) || file.size(f) == 0) {
-      missing_files <- c(missing_files, f)
-      message("  MISSING: ", f)
-    } else {
-      sz_mb <- round(file.size(f) / 1024^2, 1)
-      message("  OK (", sz_mb, " MB): ", basename(f))
-    }
-  }
-
-  if (length(missing_files) > 0) {
-    stop(
-      length(missing_files), " required input file(s) missing or empty.\n",
-      "Run download_xena_inputs() or re-run 00_setup.R to fetch them.\n",
-      "Missing:\n  ", paste(missing_files, collapse = "\n  ")
-    )
-  }
-
-  message("── Stage 00 | all inputs validated ────────────────────────────────────")
-  invisible(NULL)
+#' save_metadata(breast)
+save_metadata <- function(breast) {
+  message("── Stage 00 | saving ────────────────────────────────────────────────────")
+  out <- here::here("data", "processed", "metadata_breast.rds")
+  dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(list(pheno = breast), file = out)
+  message("  saved: ", out)
+  message("── Stage 00 | done ──────────────────────────────────────────────────────")
+  invisible(out)
 }
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-bootstrap_renv()
-create_project_dirs()
-download_xena_inputs()
-validate_inputs()
+verify_renv()
+pheno    <- download_phenotype()
+site_col <- inspect_columns(pheno)
+breast   <- filter_breast(pheno, site_col)
+rm(pheno)
+save_metadata(breast)
 
 message("✅ Stage 00 complete. Proceed to R/01_preprocessing.R")
