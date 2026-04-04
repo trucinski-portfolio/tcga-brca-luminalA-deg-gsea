@@ -1,0 +1,2 @@
+subtype,gene_score_hr,gene_score_lower95,gene_score_upper95,gene_score_pval,n_events,n_total
+Her2,1.14073454205427,0.584027744381335,2.22810527060529,0.699879267743644,11,57

@@ -19,3 +19,7 @@ scripts/config/__pycache__/
 .venv/
 env/
 
+# Node / docs tooling
+node_modules/
+package-lock.json
+

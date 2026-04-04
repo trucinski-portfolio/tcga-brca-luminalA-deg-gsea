@@ -17,8 +17,8 @@ and survival associations — to produce a publishable-quality, thesis-defensibl
 
 ## Current Stage
 
-**Active:** Stage 02 (clustering) — update this line when moving to a new stage.
-**Last confirmed output:** cohort.rds — Tumor 817 (LumA 420, LumB 192, Her2 66, Basal 139), NAT 113, GTEx 179. 28,344 genes × 1,109 samples. 18 contrasts.
+**Active:** Stage 08 complete — pipeline finished.
+**Last confirmed output:** 44 publication figures across 7 figure sets. All stages 00–08 confirmed complete.
 
 > When starting a session, read this field first. Run `/stage-gate` before writing any code.
 
@@ -110,6 +110,8 @@ expr <- expr_raw[, colnames(expr_raw) %in% breast_samples]
   does NOT embed PAM50 subtypes in `detailed_category` for BRCA samples. PAM50 must be
   fetched separately from `tcgaHub` and joined on the 15-char TCGA barcode.
   Column: `PAM50Call_RNAseq`. Values: `"LumA"`, `"LumB"`, `"Her2"`, `"Basal"`, `"Normal"`.
+  Overall Survival columns (confirmed): `OS_Time_nature2012` (days), `OS_event_nature2012` (0/1).
+  NOT `OS.time` / `OS` — those column names do not exist in this dataset.
   **Never try to extract PAM50 from `detailed_category` — it only says "Breast Invasive Carcinoma".**
 
 ---
@@ -478,12 +480,17 @@ No stubs. No TODO comments left in committed code.
       Both vs_GTEx and vs_NAT contrasts per subtype. 58–93 sig pathways per contrast.
       236 gene sets: 50 Hallmark + 186 KEGG Legacy.
 
-□ 06: wgcna_modules.rds. Module-trait heatmap printed to screen AND saved
-      as .png + .pdf in results/figures/.
+☑ 06: wgcna_modules.rds. 5 modules (excl. grey), power=8 (R²=0.907).
+      20/24 significant module-trait associations (p<0.05).
+      Module-trait heatmap printed to screen AND saved as .png + .pdf.
 
-□ 07: Cox HR .csv per subtype. ≥1 signature with significant OS association.
+☑ 07: Cox HR .csv per subtype. 4 files written. No subtype reached p<0.05 (expected —
+      signatures trained for subtype identity, not survival). Basal trend HR=0.70, p=0.11.
+      KM figures saved as .png + .pdf for all 4 subtypes.
 
-□ 08: All figures printed to screen during run AND saved as .png + .pdf.
+☑ 08: All 7 figures (44 files: .png + .pdf) saved to results/figures/.
+      Fig1 UMAP overview, Fig2 DEG counts, Fig3×4 volcanos, Fig4 DEG heatmap,
+      Fig5 signature heatmap, Fig6 fgsea dotplot, Fig7 Cox forest plot.
       subtype_colors consistent across all figures.
 ```
 

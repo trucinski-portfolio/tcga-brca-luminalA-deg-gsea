@@ -1,0 +1,2 @@
+subtype,gene_score_hr,gene_score_lower95,gene_score_upper95,gene_score_pval,n_events,n_total
+Basal,0.69586815245701,0.443584255282791,1.09163587263761,0.114492481201505,16,125
